@@ -13,17 +13,23 @@ scaler = StandardScaler()
 test_data = scaler.fit_transform(test_data)
 test_data = torch.tensor(test_data, dtype=torch.float32)
 
+# architecture
 class NeuralNet(nn.Module):
     def __init__(self, input_dim, num_classes):
         super(NeuralNet, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 128)
-        self.fc2 = nn.Linear(128, num_classes)
+        self.fc1 = nn.Linear(input_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 128)
+        self.fc4 = nn.Linear(128, 64)
+        self.fc5 = nn.Linear(64, num_classes)
 
     def forward(self, x):
         x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        x = torch.relu(self.fc4(x))
+        x = self.fc5(x)
         return x
-
 # Get the input dimensions from the test data
 input_dim = test_data.shape[1]
 

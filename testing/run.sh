@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 echo "<<training model>>"
-python3 nn.py
+time python3 nn.py
+echo ""
 echo "<<testing model>>"
-python3 classifyall.py
+time python3 classifyall.py
