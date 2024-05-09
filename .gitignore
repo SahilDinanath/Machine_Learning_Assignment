@@ -159,3 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 testing/pretrained_model.pth
+shell.nix
+ML_Assignment_2_2024_data.zip
+pretrained_model.pth
+predlabels.txt
