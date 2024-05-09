@@ -6,6 +6,7 @@ import torch.nn as nn
 
 # Load the test data
 # for now just train data
+#change to testdata.txt later
 test_data = np.genfromtxt("traindata.txt", delimiter=",")
 
 scaler = StandardScaler()
@@ -41,6 +42,7 @@ with torch.no_grad():
 # Save predicted labels to output file
 np.savetxt("predlabels.txt", predicted_labels.numpy(), fmt="%d")
 
+###remove later 
 true_labels = np.genfromtxt("trainlabels.txt", delimiter=",")
 predicted_labels = np.genfromtxt("predlabels.txt", delimiter=",")
 print(
