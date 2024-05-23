@@ -164,3 +164,7 @@ ML_Assignment_2_2024_data.zip
 pretrained_model.pth
 predlabels.txt
 testing/predlabels.txt
+.envrc
+testing/.~lock.traindata.txt#
+ML_Assignment_2_2024_data/.~lock.traindata.txt#
+ML_Assignment_2_2024_data/.~lock.trainlabels.txt#

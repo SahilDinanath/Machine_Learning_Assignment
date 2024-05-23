@@ -52,21 +52,36 @@ desc_stats = data.describe()
 print("Descriptive Statistics:\n", desc_stats)
 
 #select rows that have 0 in the last column
-mask = data[data.columns[-1]] == 0
-data = data[mask]
-labels = labels[mask]
+# mask = data[data.columns[-1]] == 0
+# data = data[mask]
+# labels = labels[mask]
 
 #
 # ##
 # ## INFO: divide columns with above 255 values by 10
 # ##
-# threshold = 256
-# # Loop through each column in the DataFrame
-# for column in data.columns:
-#     # Check if any element in the current column exceeds the threshold
-#     if (data[column] > threshold).any():
-#         # Divide the entire column by 10
-#         data[column] = data[column] / 10
+threshold = 256
+# Loop through each column in the DataFrame
+for column in data.columns:
+    # Check if any element in the current column exceeds the threshold
+    if (data[column] > threshold).any():
+        # Divide the entire column by 10
+        data[column] = data[column] / 10
+
+
+# INFO: replace any columns with 255 with the average
+def replace_max_with_mean(df, max_value=255):
+    # Iterate over each column
+    for col in df.columns:
+        # Calculate the mean of non-maxed-out values
+        mean_value = df[df[col] != max_value][col].mean()
+        
+        # Replace maxed-out values with the mean
+        df[col] = df[col].replace(max_value, mean_value)
+    
+    return df
+
+data = replace_max_with_mean(data)
 
 ##
 ## INFO: convert negative columns to binary then invert the binary
@@ -102,7 +117,7 @@ def invert_bits(number, bit_length=16):
 # data = data.drop(columns=cols_to_drop)
 # desc_stats = data.describe()
 # print("Descriptive Statistics:\n", desc_stats)
-#
+
 
 # very shitty minimal nonexistent preprocessing
 # print(data)
@@ -180,7 +195,7 @@ model = NeuralNet(input_dim=train_data.shape[1], num_classes=len(np.unique(label
 
 
 #hyper parameters
-num_epochs = 500
+num_epochs = 300
 batch_size = 128
 
 # loss function and optimiser
