@@ -81,7 +81,7 @@ def replace_max_with_mean(df, max_value=255):
     
     return df
 
-data = replace_max_with_mean(data)
+#data = replace_max_with_mean(data)
 
 ##
 ## INFO: convert negative columns to binary then invert the binary
@@ -172,23 +172,41 @@ train_labels = torch.tensor(labels, dtype=torch.long).to(device)
 train_dataset = TensorDataset(train_data,train_labels)
 
  # # architecture
-class NeuralNet(nn.Module):
-     def __init__(self, input_dim, num_classes):
-         super(NeuralNet, self).__init__()
-         self.fc1 = nn.Linear(input_dim, input_dim)
-         self.fc2 = nn.Linear(input_dim, input_dim)
-         self.fc3 = nn.Linear(input_dim, input_dim)
-         self.fc4 = nn.Linear(input_dim, input_dim)
-         self.fc5 = nn.Linear(input_dim, num_classes)
-        
-     def forward(self, x):
-         x = torch.relu(self.fc1(x))
-         x = torch.relu(self.fc2(x))
-         x = torch.relu(self.fc3(x))
-         x = torch.relu(self.fc4(x))
-         x = self.fc5(x)
-         return x
+# class NeuralNet(nn.Module):
+#      def __init__(self, input_dim, num_classes):
+#          super(NeuralNet, self).__init__()
+#          self.fc1 = nn.Linear(input_dim, input_dim)
+#          self.fc2 = nn.Linear(input_dim, input_dim)
+#          self.fc3 = nn.Linear(input_dim, input_dim)
+#          self.fc4 = nn.Linear(input_dim, input_dim)
+#          self.fc5 = nn.Linear(input_dim, num_classes)
+#
+#      def forward(self, x):
+#          x = torch.relu(self.fc1(x))
+#          x = torch.relu(self.fc2(x))
+#          x = torch.relu(self.fc3(x))
+#          x = torch.relu(self.fc4(x))
+#          x = self.fc5(x)
+#          return x
 
+class NeuralNet(nn.Module):
+    def __init__(self, input_dim, num_classes):
+        super(NeuralNet, self).__init__()
+        self.fc1 = nn.Linear(input_dim, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 256)
+        self.fc4 = nn.Linear(256, num_classes)
+        self.dropout = nn.Dropout(0.3)
+        self.batch_norm1 = nn.BatchNorm1d(1024)
+        self.batch_norm2 = nn.BatchNorm1d(512)
+        self.batch_norm3 = nn.BatchNorm1d(256)
+
+    def forward(self, x):
+        x = self.dropout(torch.relu(self.batch_norm1(self.fc1(x))))
+        x = self.dropout(torch.relu(self.batch_norm2(self.fc2(x))))
+        x = self.dropout(torch.relu(self.batch_norm3(self.fc3(x))))
+        x = self.fc4(x)
+        return x
 
 # initialise nn model
 model = NeuralNet(input_dim=train_data.shape[1], num_classes=len(np.unique(labels))).to(device)
@@ -200,21 +218,28 @@ batch_size = 128
 
 # loss function and optimiser
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters())
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-
+best_loss = np.inf
+patience, trials = 20, 0
+model.train()
 for epoch in range(num_epochs):
-    model.train()
     for batch_data, batch_labels in train_loader:
         optimizer.zero_grad()
         outputs = model(batch_data)
-        loss = criterion(outputs, batch_labels)
+        loss = nn.functional.cross_entropy(outputs, batch_labels)
         loss.backward()
         optimizer.step()
-
-    if (epoch + 1) % 10 == 0:
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}")
-
+        scheduler.step()
+    if loss.item() < best_loss:
+        trials = 0
+        best_loss = loss.item()
+    else:
+        trials += 1
+        if trials >= patience:
+            print(f"Early stopping on epoch {epoch}")
+            break
 torch.save(model.state_dict(), "pretrained_model.pth")
