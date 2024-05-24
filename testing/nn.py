@@ -63,15 +63,16 @@ labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 ## ##
 ## ## INFO: divide columns with above 255 values by 10
 ## ##
-#threshold = 256
-## Loop through each column in the DataFrame
-#for column in data.columns:
-#    # Check if any element in the current column exceeds the threshold
-#    if (data[column] > threshold).any():
-#        # Divide the entire column by 10
-#        data[column] = data[column] / 10
-#
-#
+# threshold = 256
+# ## Loop through each column in the DataFrame
+# data = pd.DataFrame(data)
+# for column in data.columns:
+#     # Check if any element in the current column exceeds the threshold
+#     if (data[column] > threshold).any():
+#         # Divide the entire column by 10
+#         data[column] = data[column] / 10
+# data = data.to_numpy()
+# #
 ## INFO: replace any columns with 255 with the average
 #def replace_max_with_mean(df, max_value=255):
 #    # Iterate over each column
@@ -89,39 +90,42 @@ labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 ###
 ### INFO: convert negative columns to binary then invert the binary
 ###
-#def invert_bits(number, bit_length=16):
-#    # Convert the number to binary with the specified bit length
-#     binary_str = format(number if number >= 0 else (1 << bit_length) + int(number), f'0{bit_length}b')
+def invert_bits(number, bit_length=16):
+    # Convert the number to binary with the specified bit length
+     binary_str = format(number if number >= 0 else (1 << bit_length) + int(number), f'0{bit_length}b')
+
+     # Invert the bits
+     inverted_binary_str = ''.join('1' if bit == '0' else '0' for bit in binary_str)
+
+     # Convert the inverted binary string back to a decimal number
+     inverted_number = int(inverted_binary_str, 2)
+
+     # Handle signed conversion if necessary
+     if inverted_binary_str[0] == '1':  # if the number is negative in two's complement form
+         inverted_number -= 1 << bit_length
+#      return inverted_number
 #
-#     # Invert the bits
-#     inverted_binary_str = ''.join('1' if bit == '0' else '0' for bit in binary_str)
+# data = pd.DataFrame(data)
+# for column in data.columns:
+#      if (data[column] < 0).any():
+#          data[column] = data[column].apply(lambda x: invert_bits(x))
+# data = data.to_numpy()
 #
-#     # Convert the inverted binary string back to a decimal number
-#     inverted_number = int(inverted_binary_str, 2)
-#
-#     # Handle signed conversion if necessary
-#     if inverted_binary_str[0] == '1':  # if the number is negative in two's complement form
-#         inverted_number -= 1 << bit_length
-#     return inverted_number
-#
-## for column in data.columns:
-##      if (data[column] < 0).any():
-##          data[column] = data[column].apply(lambda x: invert_bits(x))
-##
 ## INFO: Drop columns which are not in these bounds
 ## remove rows that have value 255
 ##
 #
-## min_value = 0
-## max_value = 256
-## # # # # Identify columns to drop
-## cols_to_drop = [col for col in data.columns if not ((data[col] >= min_value) & (data[col] <= max_value)).all()]
-## # # # Drop the columns
-## data = data.drop(columns=cols_to_drop)
-## desc_stats = data.describe()
-## print("Descriptive Statistics:\n", desc_stats)
-#
-#
+# data = pd.DataFrame(data)
+# min_value = 0
+# max_value = 75
+# # # # # Identify columns to drop
+# cols_to_drop = [col for col in data.columns if not ((data[col] >= min_value) & (data[col] <= max_value)).all()]
+# # # # Drop the columns
+# data = data.drop(columns=cols_to_drop)
+# desc_stats = data.describe()
+# print("Descriptive Statistics:\n", desc_stats)
+# data = data.to_numpy()
+# #
 ## very shitty minimal nonexistent preprocessing
 ## print(data)
 #scaler = StandardScaler()
@@ -188,10 +192,16 @@ for category in range(4):
     # Select only the columns corresponding to the selected features
     #data_cat = data_cat[:, selected_features]
 
-    # pca = PCA(n_components=0.95)
-    # data_cat = pca.fit_transform(data_cat)
+    ############################################################
+    #INFO: Data Processing
+
     scaler = StandardScaler()
     data_cat = scaler.fit_transform(data_cat)
+
+    # pca = PCA(n_components=0.95)
+    # data_cat = pca.fit_transform(data_cat)
+
+    ############################################################
 
     data_cat = torch.from_numpy(data_cat).float()
     labels_cat = torch.from_numpy(labels_cat).long()
@@ -222,7 +232,7 @@ for category in range(4):
             if trials >= patience:
                 print(f"Early stopping on epoch {epoch}")
                 break
-
+    
     model.eval()
     with torch.no_grad():
         outputs = model(X_test)
