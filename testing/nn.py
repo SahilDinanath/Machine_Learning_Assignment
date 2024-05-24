@@ -42,7 +42,7 @@ print("running on ", device)
 #process raw data 
 #################
 #remove columns etc
-data = np.array(np.genfromtxt("traindata.txt", delimiter=","))
+data = np.array(np.genfromtxt("preprocessed_traindata.txt", delimiter=","))
 
 ################
 #use pandas to perform statistical cleaning
@@ -187,7 +187,6 @@ for category in range(4):
     indices = data[:, -1] == category
     data_cat = data[indices]
     labels_cat = labels[indices]
-
     data_cat = data_cat[:, :-1]
     # Select only the columns corresponding to the selected features
     #data_cat = data_cat[:, selected_features]
@@ -195,8 +194,8 @@ for category in range(4):
     ############################################################
     #INFO: Data Processing
 
-    scaler = StandardScaler()
-    data_cat = scaler.fit_transform(data_cat)
+    # scaler = StandardScaler()
+    # data_cat = scaler.fit_transform(data_cat)
 
     # pca = PCA(n_components=0.95)
     # data_cat = pca.fit_transform(data_cat)
