@@ -34,7 +34,7 @@ data = pca.fit_transform(data)
 #convert to pandas data frame
 data = pd.DataFrame(data)
 # Create the scatter matrix
-sns.scatterplot(data)
+sns.pairplot(data)
 
 # Show the plot
 plt.show()
