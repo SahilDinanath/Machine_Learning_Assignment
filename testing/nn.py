@@ -179,8 +179,8 @@ class NeuralNet(nn.Module):
 
 # Define hyperparameters to tune
 params_grid = {
-    'lr': [0.001, 0.01, 0.1],
-    'hidden_units': [256,512,1024],
+    'lr': [0.0001,0.001, 0.01, 0.1],
+    'hidden_units': [32,64,128,256,512,1024],
     # Add other hyperparameters to tune
 }
 
@@ -224,7 +224,7 @@ for category in range(4):
         model.train()
         best_loss = np.inf
         patience, trials = 20, 0
-        for epoch in range(200):
+        for epoch in range(500):
             optimizer.zero_grad()
             outputs = model(X_train)
             loss = F.cross_entropy(outputs, y_train)
