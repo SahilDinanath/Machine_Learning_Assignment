@@ -43,6 +43,7 @@ print("running on ", device)
 #################
 #remove columns etc
 data = np.array(np.genfromtxt("preprocessed_traindata.txt", delimiter=","))
+labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 
 ################
 #use pandas to perform statistical cleaning
@@ -50,7 +51,6 @@ data = np.array(np.genfromtxt("preprocessed_traindata.txt", delimiter=","))
 #data = pd.DataFrame(data)
 
 
-labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 #desc_stats = data.describe()
 #print("Descriptive Statistics:\n", desc_stats)
 
@@ -90,19 +90,19 @@ labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 ###
 ### INFO: convert negative columns to binary then invert the binary
 ###
-def invert_bits(number, bit_length=16):
-    # Convert the number to binary with the specified bit length
-     binary_str = format(number if number >= 0 else (1 << bit_length) + int(number), f'0{bit_length}b')
-
-     # Invert the bits
-     inverted_binary_str = ''.join('1' if bit == '0' else '0' for bit in binary_str)
-
-     # Convert the inverted binary string back to a decimal number
-     inverted_number = int(inverted_binary_str, 2)
-
-     # Handle signed conversion if necessary
-     if inverted_binary_str[0] == '1':  # if the number is negative in two's complement form
-         inverted_number -= 1 << bit_length
+# def invert_bits(number, bit_length=16):
+#     # Convert the number to binary with the specified bit length
+#      binary_str = format(number if number >= 0 else (1 << bit_length) + int(number), f'0{bit_length}b')
+#
+#      # Invert the bits
+#      inverted_binary_str = ''.join('1' if bit == '0' else '0' for bit in binary_str)
+#
+#      # Convert the inverted binary string back to a decimal number
+#      inverted_number = int(inverted_binary_str, 2)
+#
+#      # Handle signed conversion if necessary
+#      if inverted_binary_str[0] == '1':  # if the number is negative in two's complement form
+#          inverted_number -= 1 << bit_length
 #      return inverted_number
 #
 # data = pd.DataFrame(data)
@@ -190,17 +190,6 @@ for category in range(4):
     data_cat = data_cat[:, :-1]
     # Select only the columns corresponding to the selected features
     #data_cat = data_cat[:, selected_features]
-
-    ############################################################
-    #INFO: Data Processing
-
-    # scaler = StandardScaler()
-    # data_cat = scaler.fit_transform(data_cat)
-
-    # pca = PCA(n_components=0.95)
-    # data_cat = pca.fit_transform(data_cat)
-
-    ############################################################
 
     data_cat = torch.from_numpy(data_cat).float()
     labels_cat = torch.from_numpy(labels_cat).long()

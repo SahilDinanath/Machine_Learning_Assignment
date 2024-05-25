@@ -72,7 +72,7 @@ data = pd.DataFrame(data)
 data['label'] = labels
 data = data.sample(n=200, random_state=37)
 # Create the scatter matrix
-sns.pairplot(data, hue="label", palette='viridis')
+sns.pairplot(data, hue="label")
 
 # Show the plot
 plt.show()
