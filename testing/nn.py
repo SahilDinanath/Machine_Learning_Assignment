@@ -17,6 +17,8 @@ from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from torch.optim import SGD, Adam, lr_scheduler
 
+from preprocessor import preprocess
+
 ##############################
 # Setup
 ##############################
@@ -43,7 +45,7 @@ print("running on ", device)
 #process raw data 
 #################
 #remove columns etc
-data = np.array(np.genfromtxt("preprocessed_traindata.txt", delimiter=","))
+data = preprocess('traindata.txt')
 labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 
 ################
@@ -187,10 +189,13 @@ params_grid = {
 # initialise nn model
 # model = NeuralNet(input_dim=train_data.shape[1], num_classes=len(np.unique(labels))).to(device)
 
+X_test = preprocess('testdata.txt')
+y_test = np.array(np.genfromtxt("./targetlabels.txt", delimiter="\n"))
 
-
-data, X_test, labels, y_test = train_test_split(data, labels, test_size=0.1, random_state=32)
+#data, X_test, labels, y_test = train_test_split(data, labels, test_size=0.1, random_state=32)
 #used to test model later
+
+criterion = nn.CrossEntropyLoss()
 
 for category in range(4):
     best_accuracy = 0.0
@@ -227,7 +232,7 @@ for category in range(4):
         for epoch in range(500):
             optimizer.zero_grad()
             outputs = model(X_train)
-            loss = F.cross_entropy(outputs, y_train)
+            loss = criterion(outputs, y_train)
             loss.backward()
             optimizer.step()
             scheduler.step()
