@@ -1,6 +1,7 @@
+from pandas.core.dtypes.common import classes
 import torch.nn.functional as F
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import ParameterGrid, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 import torch
@@ -14,7 +15,7 @@ from sklearn.linear_model import LogisticRegression, Lasso
 from sklearn.feature_selection import RFE
 from sklearn.svm import LinearSVC
 from sklearn.ensemble import RandomForestClassifier
-from torch.optim import Adam, lr_scheduler
+from torch.optim import SGD, Adam, lr_scheduler
 
 ##############################
 # Setup
@@ -158,16 +159,16 @@ labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 #
  # # architecture
 class NeuralNet(nn.Module):    
-    def __init__(self, input_dim, num_classes):
+    def __init__(self, input_dim, hidden_units,num_classes):
         super(NeuralNet, self).__init__()
-        self.fc1 = nn.Linear(input_dim, 1024)
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, 256)
-        self.fc4 = nn.Linear(256, num_classes)
+        self.fc1 = nn.Linear(input_dim, hidden_units)
+        self.fc2 = nn.Linear(hidden_units, hidden_units)
+        self.fc3 = nn.Linear(hidden_units, hidden_units)
+        self.fc4 = nn.Linear(hidden_units, num_classes)
         self.dropout = nn.Dropout(0.3)
-        self.batch_norm1 = nn.BatchNorm1d(1024)
-        self.batch_norm2 = nn.BatchNorm1d(512)
-        self.batch_norm3 = nn.BatchNorm1d(256)
+        self.batch_norm1 = nn.BatchNorm1d(hidden_units)
+        self.batch_norm2 = nn.BatchNorm1d(hidden_units)
+        self.batch_norm3 = nn.BatchNorm1d(hidden_units)
 
     def forward(self, x):
         x = self.dropout(F.relu(self.batch_norm1(self.fc1(x))))
@@ -176,61 +177,129 @@ class NeuralNet(nn.Module):
         x = self.fc4(x)
         return x
 
+# Define hyperparameters to tune
+params_grid = {
+    'lr': [0.001, 0.01, 0.1],
+    'hidden_units': [256,512,1024],
+    # Add other hyperparameters to tune
+}
 
 # initialise nn model
 # model = NeuralNet(input_dim=train_data.shape[1], num_classes=len(np.unique(labels))).to(device)
 
-accuracies = []
+
+
+data, X_test, labels, y_test = train_test_split(data, labels, test_size=0.1, random_state=32)
+#used to test model later
 
 for category in range(4):
-    print(f"Processing category {category}...")
-    indices = data[:, -1] == category
-    data_cat = data[indices]
-    labels_cat = labels[indices]
-    data_cat = data_cat[:, :-1]
-    # Select only the columns corresponding to the selected features
-    #data_cat = data_cat[:, selected_features]
+    best_accuracy = 0.0
+    for params in ParameterGrid(params_grid):
+        print(f"Processing category {category}...")
+        indices = data[:, -1] == category
+        data_cat = data[indices]
+        labels_cat = labels[indices]
+        #data_cat = data_cat[:, :-1]
+        # Select only the columns corresponding to the selected features
+        #data_cat = data_cat[:, selected_features]
 
+        data_cat = torch.from_numpy(data_cat).float()
+        labels_cat = torch.from_numpy(labels_cat).long()
+
+        X_train, X_valid, y_train, y_valid = train_test_split(data_cat, labels_cat, test_size=0.05, random_state=32)
+        #Added validation 
+        # Split temporary set into validation and test sets
+
+        #removes last column now, we need it for testing
+        X_train = X_train[:, :-1]
+        X_valid = X_valid[:, :-1]
+        data_cat = data_cat[:, :-1]
+
+        input_dim = data_cat.shape[1]
+        num_classes = len(np.unique(labels_cat))
+        model = NeuralNet(input_dim=input_dim, hidden_units=params['hidden_units'], num_classes=num_classes)
+        optimizer = Adam(model.parameters(), lr=params['lr'], weight_decay=0.01)
+        scheduler = lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+
+        model.train()
+        best_loss = np.inf
+        patience, trials = 20, 0
+        for epoch in range(200):
+            optimizer.zero_grad()
+            outputs = model(X_train)
+            loss = F.cross_entropy(outputs, y_train)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+            if loss.item() < best_loss:
+                trials = 0
+                best_loss = loss.item()
+            else:
+                trials += 1
+                if trials >= patience:
+                    print(f"Early stopping on epoch {epoch}")
+                    break
+        
+        #Validate Model
+        # Validate model
+        model.eval()
+        with torch.no_grad():
+            correct = 0
+            total = 0
+                # Forward pass
+            outputs = model(X_valid)
+            _, predicted = torch.max(outputs.data, 1)
+            total += len(y_valid)
+            correct += (predicted == y_valid).sum().item()
+            accuracy = correct / total
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_params = params
+                torch.save({
+                    'model_state_dict':model.state_dict(),
+                    'hidden_units' :params['hidden_units'],
+                    'input_dim' : input_dim,
+                    'class_dim' : num_classes
+                }, f'best_model_cat_{category}.pth')
+
+    print("category {}:".format(category))
+    print("Best Accuracy:", best_accuracy)
+    print("Best Hyperparameters:", best_params)
+
+#Test Model
+accuracies = []
+for category in range(4):
+    print(f"Processing category {category}...")
+    indices = X_test[:, -1] == category
+    data_cat = X_test[indices]
+    labels_cat = y_test[indices]
+    
+    indices = X_test[:, -1] == category
+    data_cat = X_test[indices]
+    labels_cat = y_test[indices]
+
+
+     #data_cat = data_cat[:, :-1]
+     # Select only the columns corresponding to the selected features
+     #data_cat = data_cat[:, selected_features]
+    data_cat = data_cat[:, :-1]
     data_cat = torch.from_numpy(data_cat).float()
     labels_cat = torch.from_numpy(labels_cat).long()
 
-    X_train, X_test, y_train, y_test = train_test_split(data_cat, labels_cat, test_size=0.2, random_state=42)
+    model_data = torch.load(f"best_model_cat_{category}.pth")
+    model = NeuralNet(model_data["input_dim"],model_data['hidden_units'], model_data['class_dim'])
+    model.load_state_dict(model_data['model_state_dict'])
 
-    input_dim = data_cat.shape[1]
-    num_classes = len(np.unique(labels_cat))
-    model = NeuralNet(input_dim, num_classes)
-    optimizer = Adam(model.parameters(), lr=0.001, weight_decay=0.01)
-    scheduler = lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
-
-    model.train()
-    best_loss = np.inf
-    patience, trials = 20, 0
-    for epoch in range(200):
-        optimizer.zero_grad()
-        outputs = model(X_train)
-        loss = F.cross_entropy(outputs, y_train)
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
-        if loss.item() < best_loss:
-            trials = 0
-            best_loss = loss.item()
-        else:
-            trials += 1
-            if trials >= patience:
-                print(f"Early stopping on epoch {epoch}")
-                break
-    
     model.eval()
     with torch.no_grad():
-        outputs = model(X_test)
+        outputs = model(data_cat)
         _, predicted = torch.max(outputs, 1)
-        correct = (predicted == y_test).sum().item()
-        accuracy = 100 * correct / len(y_test)
+        correct = (predicted == labels_cat).sum().item()
+        accuracy = 100 * correct / len(labels_cat)
         accuracies.append(accuracy)
         print(f'Accuracy for category {category}: {accuracy}%')
 
 average_accuracy = np.mean(accuracies)
 print(f'Average accuracy: {average_accuracy}%')
 
-torch.save(model.state_dict(), "pretrained_model.pth")
+#torch.save(model.state_dict(), "pretrained_model.pth")
