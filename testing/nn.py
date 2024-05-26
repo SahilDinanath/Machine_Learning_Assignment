@@ -172,9 +172,9 @@ class NeuralNet(nn.Module):
 
 # Define hyperparameters to tune
 params_grid = {
-    'lr': [0.0001,0.001, 0.01, 0.1],
-    'hidden_units': [64,128,256,512,1024,1040],
-    'drop_out': [0.2,0.3, 0.5, 0.7,0.8]
+    'lr': [0.001, 0.01, 0.1],
+    'hidden_units': [64,128,256,512,1024],
+    'drop_out': [0.2,0.3, 0.5, 0.7]
     # Add other hyperparameters to tune
 }
 
