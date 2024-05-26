@@ -149,28 +149,32 @@ labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 #
  # # architecture
 class NeuralNet(nn.Module):    
-    def __init__(self, input_dim, hidden_units,num_classes):
+    def __init__(self, input_dim, hidden_units,num_classes, drop_out):
         super(NeuralNet, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_units)
         self.fc2 = nn.Linear(hidden_units, hidden_units)
         self.fc3 = nn.Linear(hidden_units, hidden_units)
-        self.fc4 = nn.Linear(hidden_units, num_classes)
-        self.dropout = nn.Dropout(0.3)
+        self.fc4 = nn.Linear(hidden_units, hidden_units)
+        self.fc5 = nn.Linear(hidden_units, num_classes)
+        self.dropout = nn.Dropout(drop_out)
         self.batch_norm1 = nn.BatchNorm1d(hidden_units)
         self.batch_norm2 = nn.BatchNorm1d(hidden_units)
         self.batch_norm3 = nn.BatchNorm1d(hidden_units)
+        self.batch_norm4 = nn.BatchNorm1d(hidden_units)
 
     def forward(self, x):
         x = self.dropout(F.relu(self.batch_norm1(self.fc1(x))))
         x = self.dropout(F.relu(self.batch_norm2(self.fc2(x))))
         x = self.dropout(F.relu(self.batch_norm3(self.fc3(x))))
-        x = self.fc4(x)
+        x = self.dropout(F.relu(self.batch_norm4(self.fc4(x))))
+        x = self.fc5(x)
         return x
 
 # Define hyperparameters to tune
 params_grid = {
     'lr': [0.0001,0.001, 0.01, 0.1],
-    'hidden_units': [32,64,128,256,512,1024],
+    'hidden_units': [64,128,256,512,1024,1040],
+    'drop_out': [0.2,0.3, 0.5, 0.7,0.8]
     # Add other hyperparameters to tune
 }
 
@@ -196,21 +200,21 @@ for category in range(4):
         # Select only the columns corresponding to the selected features
         #data_cat = data_cat[:, selected_features]
 
-        data_cat = torch.from_numpy(data_cat).float()
-        labels_cat = torch.from_numpy(labels_cat).long()
+        data_cat = torch.from_numpy(data_cat).float().to(device)
+        labels_cat = torch.from_numpy(labels_cat).long().to(device)
 
         X_train, X_valid, y_train, y_valid = train_test_split(data_cat, labels_cat, test_size=0.1, random_state=32)
         #Added validation 
         # Split temporary set into validation and test sets
 
         #removes last column now, we need it for testing
-        X_train = X_train[:, :-1]
-        X_valid = X_valid[:, :-1]
+        X_train = X_train[:, :-1].to(device)
+        X_valid = X_valid[:, :-1].to(device)
         data_cat = data_cat[:, :-1]
 
         input_dim = data_cat.shape[1]
-        num_classes = len(np.unique(labels_cat))
-        model = NeuralNet(input_dim=input_dim, hidden_units=params['hidden_units'], num_classes=num_classes)
+        num_classes = 21
+        model = NeuralNet(input_dim=input_dim, hidden_units=params['hidden_units'], num_classes=num_classes, drop_out=params['drop_out']).to(device)
         optimizer = Adam(model.parameters(), lr=params['lr'], weight_decay=0.01)
         scheduler = lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
@@ -252,7 +256,8 @@ for category in range(4):
                     'model_state_dict':model.state_dict(),
                     'hidden_units' :params['hidden_units'],
                     'input_dim' : input_dim,
-                    'class_dim' : num_classes
+                    'class_dim' : num_classes,
+                    'drop_out' : params['drop_out']
                 }, f'best_model_cat_{category}.pth')
 
     print("category {}:".format(category))
@@ -280,7 +285,7 @@ for category in range(4):
     labels_cat = torch.from_numpy(labels_cat).long()
 
     model_data = torch.load(f"best_model_cat_{category}.pth")
-    model = NeuralNet(model_data["input_dim"],model_data['hidden_units'], model_data['class_dim'])
+    model = NeuralNet(model_data["input_dim"],model_data['hidden_units'], model_data['class_dim'], model_data['drop_out'])
     model.load_state_dict(model_data['model_state_dict'])
 
     model.eval()
