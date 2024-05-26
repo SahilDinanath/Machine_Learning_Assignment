@@ -13,20 +13,16 @@ import sklearn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from preprocessor import preprocess
 # import matplotlib
 # import seaborn as sns
 ##################################
 
-def preprocessing(test_data):
-    os.system(f"python3 preprocessor.py {test_data}")
-
 def main():
     # TODO
     # pass
-    preprocessing('testdata.txt')
-    X_test = np.array(np.genfromtxt("preprocessed_testdata.txt", delimiter=",")) 
-
-
+    X_test = preprocess("testdata.txt")
 
     class NeuralNet(nn.Module):
         def __init__(self, input_dim, hidden_units, num_classes):
