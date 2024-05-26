@@ -1,21 +1,11 @@
-from pandas.core.dtypes.common import classes
 import torch.nn.functional as F
 import numpy as np
 from sklearn.model_selection import ParameterGrid, train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
-from sklearn.decomposition import PCA
-from sklearn.feature_selection import VarianceThreshold, SelectKBest, chi2
-import pandas as pd
-from sklearn.linear_model import LogisticRegression, Lasso
-from sklearn.feature_selection import RFE
-from sklearn.svm import LinearSVC
-from sklearn.ensemble import RandomForestClassifier
-from torch.optim import SGD, Adam, lr_scheduler
+from torch.optim import Adam, lr_scheduler
+
+from preprocessor import preprocess
 
 ##############################
 # Setup
@@ -43,7 +33,7 @@ print("running on ", device)
 #process raw data 
 #################
 #remove columns etc
-data = np.array(np.genfromtxt("preprocessed_traindata.txt", delimiter=","))
+data = preprocess('traindata.txt')
 labels = np.array(np.genfromtxt("trainlabels.txt", delimiter="\n"))
 
 ################
@@ -187,10 +177,13 @@ params_grid = {
 # initialise nn model
 # model = NeuralNet(input_dim=train_data.shape[1], num_classes=len(np.unique(labels))).to(device)
 
+X_test = preprocess('testdata.txt')
+y_test = np.array(np.genfromtxt("./targetlabels.txt", delimiter="\n"))
 
-
-data, X_test, labels, y_test = train_test_split(data, labels, test_size=0.1, random_state=32)
+#data, X_test, labels, y_test = train_test_split(data, labels, test_size=0.1, random_state=32)
 #used to test model later
+
+criterion = nn.CrossEntropyLoss()
 
 for category in range(4):
     best_accuracy = 0.0
@@ -206,7 +199,7 @@ for category in range(4):
         data_cat = torch.from_numpy(data_cat).float()
         labels_cat = torch.from_numpy(labels_cat).long()
 
-        X_train, X_valid, y_train, y_valid = train_test_split(data_cat, labels_cat, test_size=0.05, random_state=32)
+        X_train, X_valid, y_train, y_valid = train_test_split(data_cat, labels_cat, test_size=0.1, random_state=32)
         #Added validation 
         # Split temporary set into validation and test sets
 
@@ -227,7 +220,7 @@ for category in range(4):
         for epoch in range(500):
             optimizer.zero_grad()
             outputs = model(X_train)
-            loss = F.cross_entropy(outputs, y_train)
+            loss = criterion(outputs, y_train)
             loss.backward()
             optimizer.step()
             scheduler.step()

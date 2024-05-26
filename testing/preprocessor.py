@@ -1,10 +1,8 @@
-import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-import sys
+from sklearn.preprocessing import MinMaxScaler
 
-def preprocess(filename):
-    data = pd.read_csv(f'{filename}', header=None)
+def preprocess(path):
+    data = pd.read_csv(path, header=None)
     rotations = data.iloc[:, -1]
     data = data.iloc[:, :-1]
 
@@ -36,9 +34,5 @@ def preprocess(filename):
     # create a new dataframe since otherwise we get fragmentation due to calling a dataframe a lot
     rotations = pd.DataFrame(rotations.values, columns=['rotations'])
     data = pd.concat([data, rotations], axis=1)
-    data.to_csv(f'preprocessed_{filename}', index=False, header=False)
-
-
-if __name__ == "__main__":
-    filename = sys.argv[1]
-    preprocess(filename)
+    
+    return data.to_numpy()
