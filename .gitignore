@@ -169,3 +169,4 @@ testing/.~lock.traindata.txt#
 ML_Assignment_2_2024_data/.~lock.traindata.txt#
 ML_Assignment_2_2024_data/.~lock.trainlabels.txt#
 .direnv
+testing/preprocessed_traindata.txt
