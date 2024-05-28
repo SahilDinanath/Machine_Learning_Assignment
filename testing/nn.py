@@ -203,7 +203,7 @@ for category in range(4):
         data_cat = torch.from_numpy(data_cat).float().to(device)
         labels_cat = torch.from_numpy(labels_cat).long().to(device)
 
-        X_train, X_valid, y_train, y_valid = train_test_split(data_cat, labels_cat, test_size=0.1, random_state=32)
+        X_train, X_valid, y_train, y_valid = train_test_split(data_cat, labels_cat, test_size=0.05, random_state=32)
         #Added validation 
         # Split temporary set into validation and test sets
 

@@ -1,5 +1,7 @@
 import pandas as pd
+from pandas.core.api import DataFrame
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
 def preprocess(path):
     data = pd.read_csv(path, header=None)
@@ -30,6 +32,10 @@ def preprocess(path):
     # this is dogshit
     # scaler = StandardScaler()
     # data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+    #data = data.to_numpy()
+    # col_means = np.mean(data[data != 255], axis=0) 
+    # data[data == 255] = 0
+    #data = DataFrame(data)
 
     # create a new dataframe since otherwise we get fragmentation due to calling a dataframe a lot
     rotations = pd.DataFrame(rotations.values, columns=['rotations'])
